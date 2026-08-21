@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="The site where I show the music I enjoy.">
+  <title>The Collection | LuciTunes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="LuciTunes home"><span>LuciTunes</span></a>
+      <nav class="main-nav" aria-label="Main navigation"><a href="journal.html">The Collection</a><a href="about.html">About LuciTunes</a><a class="customize-link" href="customize.html" hidden>Customize</a><button class="login-button" id="login-button" type="button"><span class="icon">↗</span> Login</button></nav>
+    </header>
+    <main id="top">
+      <section class="page-intro"><p class="eyebrow">The Collection <span class="line"></span> 2026</p><h1>The Collection<br><em>A personal listening archive.</em></h1><p class="hero-intro">Notes, ratings, and reflections on the music that stays with me.</p></section>
+      <section class="journal-section" id="journal"><div class="section-heading"><div><p class="eyebrow">My Reviews</p><h2>Reviews</h2></div><div class="filter-wrap"><label for="genre-filter">Filter by genre</label><select id="genre-filter"><option value="all">All categories</option><option value="Indie">Indie</option><option value="Electronic">Electronic</option><option value="Jazz">Jazz</option><option value="Soul">Soul</option><option value="Hip-hop">Hip-hop</option></select></div></div><div class="post-grid" id="post-grid"></div><div class="empty-state" id="empty-state" hidden>No reviews yet. The first note is waiting to be written.</div></section>
+    </main>
+    <footer class="site-footer"><span>© 2026 LuciTunes</span><span>LuciTunes 2026</span><a href="#top">Back to top ↑</a></footer>
+  </div>
+  <div class="modal-backdrop" id="login-modal" hidden><div class="modal" role="dialog" aria-modal="true" aria-labelledby="login-title"><button class="close-button" data-close="login-modal" type="button" aria-label="Close">×</button><p class="eyebrow">Editor access</p><h2 id="login-title">Welcome back.</h2><p class="modal-copy">Sign in to write and manage your music notes.</p><form id="login-form"><label>Email<input type="email" id="email" required autocomplete="username" placeholder="you@example.com"></label><label>Password<input type="password" id="password" required autocomplete="current-password" placeholder="Your password"></label><button class="primary-button" type="submit">Login <span>→</span></button><p class="form-hint">Edit your login details in script.js.</p><p class="form-message" id="login-message" role="alert"></p></form></div></div>
+  <div class="modal-backdrop" id="editor-modal" hidden><div class="modal editor-modal" role="dialog" aria-modal="true" aria-labelledby="editor-title"><button class="close-button" data-close="editor-modal" type="button" aria-label="Close">×</button><div class="editor-heading"><div><p class="eyebrow">Your studio</p><h2 id="editor-title">Write a note.</h2></div><span class="studio-dot">● Editor mode</span></div><form id="post-form"><div class="form-row"><label>Artist<input id="artist" required placeholder="Artist name"></label><label>Album or song<input id="title" required placeholder="Album or song title"></label></div><div class="form-row"><label>Category<select id="genre" required><option value="Indie">Indie</option><option value="Electronic">Electronic</option><option value="Jazz">Jazz</option><option value="Soul">Soul</option><option value="Hip-hop">Hip-hop</option><option value="Classical">Classical</option></select></label><label>Spotify link<input type="url" id="spotify" placeholder="https://open.spotify.com/..." pattern="https?://.*"></label></div><label>Post text<textarea id="note" required rows="5" placeholder="Write your post here..."></textarea></label><label class="image-dropzone" id="image-dropzone" for="post-image-input"><span class="image-drop-icon">＋</span><strong>Drop a post image here</strong><span>or click to choose a JPG, PNG, or WebP</span><input id="post-image-input" type="file" accept="image/jpeg,image/png,image/webp"></label><p class="image-status" id="image-status" aria-live="polite">No image selected</p><fieldset><legend>Rating</legend><div class="rating-input" id="rating-input" role="radiogroup" aria-label="Star rating"><button type="button" data-rating="1" aria-label="1 star">★</button><button type="button" data-rating="2" aria-label="2 stars">★</button><button type="button" data-rating="3" aria-label="3 stars">★</button><button type="button" data-rating="4" aria-label="4 stars">★</button><button type="button" data-rating="5" aria-label="5 stars">★</button></div></fieldset><button class="primary-button" type="submit">Publish note <span>→</span></button><p class="form-message" id="post-message" role="alert"></p></form></div></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
+</body>
+</html>
