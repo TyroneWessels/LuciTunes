@@ -133,7 +133,8 @@ function postCardMarkup(post, index) {
 function renderPosts() {
   if (!grid || !filter || !emptyState) return;
   const genre = filter.value;
-  const visiblePosts = genre === 'all' ? posts : posts.filter((post) => splitGenres(post.genre).includes(genre));
+  const nonFeaturedPosts = posts.filter((post) => !post.featured);
+  const visiblePosts = genre === 'all' ? nonFeaturedPosts : nonFeaturedPosts.filter((post) => splitGenres(post.genre).includes(genre));
   grid.innerHTML = visiblePosts.map((post, index) => postCardMarkup(post, index)).join('');
   grid.querySelectorAll('.edit-post').forEach((button) => button.addEventListener('click', () => startEditing(button.dataset.postId)));
   grid.querySelectorAll('.delete-post').forEach((button) => button.addEventListener('click', () => deletePost(button.dataset.postId)));
