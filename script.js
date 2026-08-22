@@ -58,9 +58,12 @@ let posts = [];
 let currentUser = null;
 let editingPostId = null;
 let selectedRating = 5;
+let selectedFeatured = false;
 let selectedImage = '';
 let editingImageUrl = null;
 const grid = document.querySelector('#post-grid');
+const featuredSection = document.querySelector('#featured-section');
+const featuredGrid = document.querySelector('#featured-grid');
 const filter = document.querySelector('#genre-filter');
 const emptyState = document.querySelector('#empty-state');
 const detail = document.querySelector('#post-detail');
@@ -70,6 +73,12 @@ if (postForm && !document.querySelector('#reflection')) {
   const label = document.createElement('label');
   label.innerHTML = 'Extended reflection<textarea id="reflection" rows="7" placeholder="Write more about what you think and feel about this music..."></textarea>';
   postForm.querySelector('#note')?.parentElement.after(label);
+}
+if (postForm && !document.querySelector('#featured-toggle')) {
+  const label = document.createElement('label');
+  label.className = 'featured-toggle';
+  label.innerHTML = '<input type="checkbox" id="featured-toggle"> ★ Give this a gold star (feature it)';
+  postForm.querySelector('#rating-input')?.closest('fieldset').after(label);
 }
 async function updateCustomizeLink() {
   const customizeLink = document.querySelector('.customize-link');
@@ -99,14 +108,26 @@ function applyTemplateConfig() {
 applyTemplateConfig();
 
 function stars(rating) { return '★'.repeat(rating) + '<span class="empty-stars">' + '★'.repeat(5 - rating) + '</span>'; }
+function postCardMarkup(post, index) {
+  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="gold-star-badge" title="Featured">★</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${post.genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
+}
 function renderPosts() {
   if (!grid || !filter || !emptyState) return;
   const genre = filter.value;
   const visiblePosts = genre === 'all' ? posts : posts.filter((post) => post.genre === genre);
-  grid.innerHTML = visiblePosts.map((post, index) => `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image"><span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${post.genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`).join('');
+  grid.innerHTML = visiblePosts.map((post, index) => postCardMarkup(post, index)).join('');
   grid.querySelectorAll('.edit-post').forEach((button) => button.addEventListener('click', () => startEditing(button.dataset.postId)));
   grid.querySelectorAll('.delete-post').forEach((button) => button.addEventListener('click', () => deletePost(button.dataset.postId)));
   emptyState.hidden = visiblePosts.length > 0;
+  renderFeaturedPosts();
+}
+function renderFeaturedPosts() {
+  if (!featuredSection || !featuredGrid) return;
+  const featuredPosts = posts.filter((post) => post.featured);
+  featuredSection.hidden = featuredPosts.length === 0;
+  featuredGrid.innerHTML = featuredPosts.map((post, index) => postCardMarkup(post, index)).join('');
+  featuredGrid.querySelectorAll('.edit-post').forEach((button) => button.addEventListener('click', () => startEditing(button.dataset.postId)));
+  featuredGrid.querySelectorAll('.delete-post').forEach((button) => button.addEventListener('click', () => deletePost(button.dataset.postId)));
 }
 async function loadPosts() {
   if (!supabaseClient || !grid) return;
@@ -142,6 +163,7 @@ function resetPostForm() {
   editingPostId = null;
   editingImageUrl = null;
   selectedImage = '';
+  selectedFeatured = false;
   postForm?.reset();
   if (imageStatus) imageStatus.textContent = 'No image selected';
   const heading = document.querySelector('#editor-title');
@@ -163,6 +185,9 @@ function startEditing(postId) {
   document.querySelector('#note').value = post.note;
   document.querySelector('#reflection').value = post.reflection || '';
   selectedRating = post.rating;
+  selectedFeatured = !!post.featured;
+  const featuredToggle = document.querySelector('#featured-toggle');
+  if (featuredToggle) featuredToggle.checked = selectedFeatured;
   selectedImage = '';
   if (imageStatus) imageStatus.textContent = post.image_url ? 'Existing image will be kept unless replaced' : 'No image selected';
   document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating));
@@ -203,6 +228,7 @@ document.querySelectorAll('[data-close]').forEach((button) => button.addEventLis
 document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.addEventListener('click', (event) => { if (event.target === backdrop) closeModal(backdrop.id); }));
 document.querySelector('#login-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const email = document.querySelector('#email').value; const password = document.querySelector('#password').value; const message = document.querySelector('#login-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { message.textContent = error.message; return; } currentUser = data.user; document.querySelectorAll('.customize-link').forEach((link) => { link.hidden = false; }); closeModal('login-modal'); openModal('editor-modal'); });
 document.querySelectorAll('#rating-input button').forEach((button) => button.addEventListener('click', () => { selectedRating = Number(button.dataset.rating); document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating)); }));
+document.querySelector('#featured-toggle')?.addEventListener('change', (event) => { selectedFeatured = event.target.checked; });
 function resizeImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -246,7 +272,7 @@ if (dropzone) {
   ['dragleave', 'drop'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => { event.preventDefault(); dropzone.classList.remove('dragging'); }));
   dropzone.addEventListener('drop', (event) => selectImage(event.dataTransfer.files[0]));
 }
-if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data: { user } } = await supabaseClient.auth.getUser(); if (!user) { message.textContent = 'Please sign in before publishing.'; return; } let imageUrl = editingImageUrl; if (selectedImage) { const filePath = `${user.id}/${Date.now()}.jpg`; const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const { error: uploadError } = await supabaseClient.storage.from('post-images').upload(filePath, imageBlob, { contentType: 'image/jpeg', upsert: false }); if (uploadError) { message.textContent = uploadError.message; return; } imageUrl = supabaseClient.storage.from('post-images').getPublicUrl(filePath).data.publicUrl; } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: document.querySelector('#genre').value, rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl }; const result = editingPostId ? await supabaseClient.from('posts').update(postData).eq('id', editingPostId).eq('author_id', user.id) : await supabaseClient.from('posts').insert({ ...postData, author_id: user.id }); if (result.error) { message.textContent = result.error.message; return; } await loadPosts(); resetPostForm(); closeModal('editor-modal'); });
+if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data: { user } } = await supabaseClient.auth.getUser(); if (!user) { message.textContent = 'Please sign in before publishing.'; return; } let imageUrl = editingImageUrl; if (selectedImage) { const filePath = `${user.id}/${Date.now()}.jpg`; const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const { error: uploadError } = await supabaseClient.storage.from('post-images').upload(filePath, imageBlob, { contentType: 'image/jpeg', upsert: false }); if (uploadError) { message.textContent = uploadError.message; return; } imageUrl = supabaseClient.storage.from('post-images').getPublicUrl(filePath).data.publicUrl; } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: document.querySelector('#genre').value, rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl, featured: selectedFeatured }; const result = editingPostId ? await supabaseClient.from('posts').update(postData).eq('id', editingPostId).eq('author_id', user.id) : await supabaseClient.from('posts').insert({ ...postData, author_id: user.id }); if (result.error) { message.textContent = result.error.message; return; } await loadPosts(); resetPostForm(); closeModal('editor-modal'); });
 document.querySelector('#cancel-edit')?.addEventListener('click', () => { resetPostForm(); });
 if (filter) filter.addEventListener('change', renderPosts);
 document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating));
