@@ -58,9 +58,9 @@
  .art-label { position: absolute; bottom: 25px; left: 28px; color: var(--ink); font: 500 11px/1.5 var(--mono); letter-spacing: .14em; }
  .journal-section { padding: 100px 0; }
  .featured-section { padding: 60px 0 0; }
- .gold-star-badge { position: absolute; top: 14px; right: 16px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--yellow); color: var(--ink); font-size: 14px; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
+ .diamond-badge { position: absolute; top: 14px; right: 16px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #7dd3fc; color: var(--ink); font-size: 14px; box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }
  .featured-toggle { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
- .featured-toggle input { width: 16px; height: 16px; accent-color: var(--yellow); }
+ .featured-toggle input { width: 16px; height: 16px; accent-color: #7dd3fc; }
  .section-heading { display: flex; align-items: end; justify-content: space-between; padding-top: 24px; margin-bottom: 38px; border-top: 1px solid var(--ink); }
  .section-heading h2, .about-section h2 { margin: 0; font-size: 42px; letter-spacing: -.07em; line-height: 1; }
  .filter-wrap { display: flex; align-items: center; gap: 12px; font: 10px var(--mono); text-transform: uppercase; }

@@ -77,7 +77,7 @@ if (postForm && !document.querySelector('#reflection')) {
 if (postForm && !document.querySelector('#featured-toggle')) {
   const label = document.createElement('label');
   label.className = 'featured-toggle';
-  label.innerHTML = '<input type="checkbox" id="featured-toggle"> ★ Give this a gold star (feature it)';
+  label.innerHTML = '<input type="checkbox" id="featured-toggle"> ◆ Feature this post (diamond pick)';
   postForm.querySelector('#rating-input')?.closest('fieldset').after(label);
 }
 async function updateCustomizeLink() {
@@ -109,7 +109,7 @@ applyTemplateConfig();
 
 function stars(rating) { return '★'.repeat(rating) + '<span class="empty-stars">' + '★'.repeat(5 - rating) + '</span>'; }
 function postCardMarkup(post, index) {
-  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="gold-star-badge" title="Featured">★</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${post.genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
+  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${post.genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
 }
 function renderPosts() {
   if (!grid || !filter || !emptyState) return;
