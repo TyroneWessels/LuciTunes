@@ -75,9 +75,9 @@ if (postForm && !document.querySelector('#reflection')) {
   postForm.querySelector('#note')?.parentElement.after(label);
 }
 if (postForm && !document.querySelector('#featured-toggle')) {
-  const label = document.createElement('label');
+  const label = document.createElement('div');
   label.className = 'featured-toggle';
-  label.innerHTML = '<input type="checkbox" id="featured-toggle"> ◆ Feature this post (diamond pick)';
+  label.innerHTML = '<button type="button" id="featured-toggle" aria-pressed="false" aria-label="Feature this post">◆</button><span>Feature this post (diamond pick)</span>';
   postForm.querySelector('#rating-input')?.closest('fieldset').after(label);
 }
 if (postForm && !document.querySelector('#genre-options')) {
@@ -185,6 +185,8 @@ function resetPostForm() {
   selectedImage = '';
   selectedFeatured = false;
   postForm?.reset();
+  const featuredToggle = document.querySelector('#featured-toggle');
+  if (featuredToggle) { featuredToggle.classList.remove('active'); featuredToggle.setAttribute('aria-pressed', 'false'); }
   if (imageStatus) imageStatus.textContent = 'No image selected';
   const heading = document.querySelector('#editor-title');
   const submit = postForm?.querySelector('button[type="submit"]');
@@ -207,7 +209,7 @@ function startEditing(postId) {
   selectedRating = post.rating;
   selectedFeatured = !!post.featured;
   const featuredToggle = document.querySelector('#featured-toggle');
-  if (featuredToggle) featuredToggle.checked = selectedFeatured;
+  if (featuredToggle) { featuredToggle.classList.toggle('active', selectedFeatured); featuredToggle.setAttribute('aria-pressed', String(selectedFeatured)); }
   selectedImage = '';
   if (imageStatus) imageStatus.textContent = post.image_url ? 'Existing image will be kept unless replaced' : 'No image selected';
   document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating));
@@ -248,7 +250,7 @@ document.querySelectorAll('[data-close]').forEach((button) => button.addEventLis
 document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.addEventListener('click', (event) => { if (event.target === backdrop) closeModal(backdrop.id); }));
 document.querySelector('#login-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const email = document.querySelector('#email').value; const password = document.querySelector('#password').value; const message = document.querySelector('#login-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { message.textContent = error.message; return; } currentUser = data.user; document.querySelectorAll('.customize-link').forEach((link) => { link.hidden = false; }); closeModal('login-modal'); openModal('editor-modal'); });
 document.querySelectorAll('#rating-input button').forEach((button) => button.addEventListener('click', () => { selectedRating = Number(button.dataset.rating); document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating)); }));
-document.querySelector('#featured-toggle')?.addEventListener('change', (event) => { selectedFeatured = event.target.checked; });
+document.querySelector('#featured-toggle')?.addEventListener('click', (event) => { selectedFeatured = !selectedFeatured; event.target.classList.toggle('active', selectedFeatured); event.target.setAttribute('aria-pressed', String(selectedFeatured)); });
 function resizeImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
