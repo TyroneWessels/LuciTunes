@@ -80,6 +80,25 @@ if (postForm && !document.querySelector('#featured-toggle')) {
   label.innerHTML = '<input type="checkbox" id="featured-toggle"> ◆ Feature this post (diamond pick)';
   postForm.querySelector('#rating-input')?.closest('fieldset').after(label);
 }
+if (postForm && !document.querySelector('#genre-options')) {
+  const datalist = document.createElement('datalist');
+  datalist.id = 'genre-options';
+  document.body.appendChild(datalist);
+}
+function splitGenres(genreString) { return (genreString || '').split(',').map((genre) => genre.trim()).filter(Boolean); }
+function formatGenres(genreString) { return splitGenres(genreString).join(' / '); }
+function updateGenreOptions() {
+  const genreSet = new Set();
+  posts.forEach((post) => splitGenres(post.genre).forEach((genre) => genreSet.add(genre)));
+  const genreList = [...genreSet].sort((first, second) => first.localeCompare(second));
+  const datalist = document.querySelector('#genre-options');
+  if (datalist) datalist.innerHTML = genreList.map((genre) => `<option value="${genre}"></option>`).join('');
+  if (filter) {
+    const previousValue = filter.value;
+    filter.innerHTML = '<option value="all">All categories</option>' + genreList.map((genre) => `<option value="${genre}">${genre}</option>`).join('');
+    filter.value = genreList.includes(previousValue) ? previousValue : 'all';
+  }
+}
 async function updateCustomizeLink() {
   const customizeLink = document.querySelector('.customize-link');
   if (!customizeLink || !supabaseClient) return;
@@ -109,12 +128,12 @@ applyTemplateConfig();
 
 function stars(rating) { return '★'.repeat(rating) + '<span class="empty-stars">' + '★'.repeat(5 - rating) + '</span>'; }
 function postCardMarkup(post, index) {
-  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${post.genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
+  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${formatGenres(post.genre)}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
 }
 function renderPosts() {
   if (!grid || !filter || !emptyState) return;
   const genre = filter.value;
-  const visiblePosts = genre === 'all' ? posts : posts.filter((post) => post.genre === genre);
+  const visiblePosts = genre === 'all' ? posts : posts.filter((post) => splitGenres(post.genre).includes(genre));
   grid.innerHTML = visiblePosts.map((post, index) => postCardMarkup(post, index)).join('');
   grid.querySelectorAll('.edit-post').forEach((button) => button.addEventListener('click', () => startEditing(button.dataset.postId)));
   grid.querySelectorAll('.delete-post').forEach((button) => button.addEventListener('click', () => deletePost(button.dataset.postId)));
@@ -139,11 +158,12 @@ async function loadPosts() {
     return;
   }
   posts = data || [];
+  updateGenreOptions();
   renderPosts();
   renderLatestPost();
 }
 function postMarkup(post) {
-  return `<a class="latest-link" href="post.html?id=${post.id}">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="latest-placeholder">No<br>Post<br>Yet</span>'}<span class="latest-overlay"><span class="post-meta">${post.genre} / ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span><strong>${post.artist}<br><em>${post.title}</em></strong><span class="latest-cta">Read the full note →</span></span></a>`;
+  return `<a class="latest-link" href="post.html?id=${post.id}">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="latest-placeholder">No<br>Post<br>Yet</span>'}<span class="latest-overlay"><span class="post-meta">${formatGenres(post.genre)} / ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span><strong>${post.artist}<br><em>${post.title}</em></strong><span class="latest-cta">Read the full note →</span></span></a>`;
 }
 function renderLatestPost() {
   if (!latestFeature) return;
@@ -157,7 +177,7 @@ async function loadPostDetail() {
   const { data: post, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
   if (error || !post) { detail.innerHTML = '<p class="detail-status">This post could not be found.</p>'; return; }
   document.title = `${post.artist} - ${post.title}`;
-  detail.innerHTML = `<a class="back-link" href="journal.html">← Back to journal</a><div class="detail-layout"><div class="detail-image">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><article class="detail-copy"><p class="eyebrow">${post.genre} <span class="line"></span> ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</p><h1>${post.artist}<br><em>${post.title}</em></h1><div class="detail-rating">${stars(post.rating)}</div><p class="detail-note">${post.note}</p>${post.reflection ? `<div class="reflection"><p class="eyebrow">Extended reflection</p><p>${post.reflection}</p></div>` : ''}${post.spotify ? `<a class="text-link" href="${post.spotify}" target="_blank" rel="noopener">Listen on Spotify <span>↗</span></a>` : ''}</article></div>`;
+  detail.innerHTML = `<a class="back-link" href="journal.html">← Back to journal</a><div class="detail-layout"><div class="detail-image">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><article class="detail-copy"><p class="eyebrow">${formatGenres(post.genre)} <span class="line"></span> ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</p><h1>${post.artist}<br><em>${post.title}</em></h1><div class="detail-rating">${stars(post.rating)}</div><p class="detail-note">${post.note}</p>${post.reflection ? `<div class="reflection"><p class="eyebrow">Extended reflection</p><p>${post.reflection}</p></div>` : ''}${post.spotify ? `<a class="text-link" href="${post.spotify}" target="_blank" rel="noopener">Listen on Spotify <span>↗</span></a>` : ''}</article></div>`;
 }
 function resetPostForm() {
   editingPostId = null;
@@ -272,7 +292,7 @@ if (dropzone) {
   ['dragleave', 'drop'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => { event.preventDefault(); dropzone.classList.remove('dragging'); }));
   dropzone.addEventListener('drop', (event) => selectImage(event.dataTransfer.files[0]));
 }
-if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data: { user } } = await supabaseClient.auth.getUser(); if (!user) { message.textContent = 'Please sign in before publishing.'; return; } let imageUrl = editingImageUrl; if (selectedImage) { const filePath = `${user.id}/${Date.now()}.jpg`; const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const { error: uploadError } = await supabaseClient.storage.from('post-images').upload(filePath, imageBlob, { contentType: 'image/jpeg', upsert: false }); if (uploadError) { message.textContent = uploadError.message; return; } imageUrl = supabaseClient.storage.from('post-images').getPublicUrl(filePath).data.publicUrl; } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: document.querySelector('#genre').value, rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl, featured: selectedFeatured }; const result = editingPostId ? await supabaseClient.from('posts').update(postData).eq('id', editingPostId).eq('author_id', user.id) : await supabaseClient.from('posts').insert({ ...postData, author_id: user.id }); if (result.error) { message.textContent = result.error.message; return; } await loadPosts(); resetPostForm(); closeModal('editor-modal'); });
+if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data: { user } } = await supabaseClient.auth.getUser(); if (!user) { message.textContent = 'Please sign in before publishing.'; return; } let imageUrl = editingImageUrl; if (selectedImage) { const filePath = `${user.id}/${Date.now()}.jpg`; const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const { error: uploadError } = await supabaseClient.storage.from('post-images').upload(filePath, imageBlob, { contentType: 'image/jpeg', upsert: false }); if (uploadError) { message.textContent = uploadError.message; return; } imageUrl = supabaseClient.storage.from('post-images').getPublicUrl(filePath).data.publicUrl; } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: splitGenres(document.querySelector('#genre').value).join(', '), rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl, featured: selectedFeatured }; const result = editingPostId ? await supabaseClient.from('posts').update(postData).eq('id', editingPostId).eq('author_id', user.id) : await supabaseClient.from('posts').insert({ ...postData, author_id: user.id }); if (result.error) { message.textContent = result.error.message; return; } await loadPosts(); resetPostForm(); closeModal('editor-modal'); });
 document.querySelector('#cancel-edit')?.addEventListener('click', () => { resetPostForm(); });
 if (filter) filter.addEventListener('change', renderPosts);
 document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating));
