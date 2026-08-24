@@ -133,8 +133,26 @@ function applyTemplateConfig() {
 applyTemplateConfig();
 
 function stars(rating) { return '★'.repeat(rating) + '<span class="empty-stars">' + '★'.repeat(5 - rating) + '</span>'; }
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+function safeUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value, window.location.href);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
 function postCardMarkup(post, index) {
-  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${formatGenres(post.genre)}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-byline">Reviewed by ${post.reviewer || reviewers[0]}</p><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
+  const artist = escapeHtml(post.artist);
+  const title = escapeHtml(post.title);
+  const note = escapeHtml(post.note);
+  const reviewer = escapeHtml(post.reviewer || reviewers[0]);
+  const genre = escapeHtml(formatGenres(post.genre));
+  const imageUrl = safeUrl(post.image_url);
+  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${imageUrl ? `<img src="${imageUrl}" alt="${artist} - ${title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${artist}<br><span>${title}</span></h3><p class="post-byline">Reviewed by ${reviewer}</p><p class="post-note">${note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
 }
 function renderPosts() {
   if (!grid || !filter || !emptyState) return;
@@ -170,7 +188,12 @@ async function loadPosts() {
   renderLatestPost();
 }
 function postMarkup(post) {
-  return `<a class="latest-link" href="post.html?id=${post.id}">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="latest-placeholder">No<br>Post<br>Yet</span>'}<span class="latest-overlay"><span class="post-meta">${formatGenres(post.genre)} / ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'} / Reviewed by ${post.reviewer || reviewers[0]}</span><strong>${post.artist}<br><em>${post.title}</em></strong><span class="latest-cta">Read the full note →</span></span></a>`;
+  const artist = escapeHtml(post.artist);
+  const title = escapeHtml(post.title);
+  const reviewer = escapeHtml(post.reviewer || reviewers[0]);
+  const genre = escapeHtml(formatGenres(post.genre));
+  const imageUrl = safeUrl(post.image_url);
+  return `<a class="latest-link" href="post.html?id=${post.id}">${imageUrl ? `<img src="${imageUrl}" alt="${artist} - ${title}">` : '<span class="latest-placeholder">No<br>Post<br>Yet</span>'}<span class="latest-overlay"><span class="post-meta">${genre} / ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'} / Reviewed by ${reviewer}</span><strong>${artist}<br><em>${title}</em></strong><span class="latest-cta">Read the full note →</span></span></a>`;
 }
 function renderLatestPost() {
   if (!latestFeature) return;
@@ -183,8 +206,16 @@ async function loadPostDetail() {
   if (!id) { detail.innerHTML = '<p class="detail-status">No post selected.</p>'; return; }
   const { data: post, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
   if (error || !post) { detail.innerHTML = '<p class="detail-status">This post could not be found.</p>'; return; }
+  const artist = escapeHtml(post.artist);
+  const title = escapeHtml(post.title);
+  const note = escapeHtml(post.note);
+  const reflection = escapeHtml(post.reflection || '');
+  const reviewer = escapeHtml(post.reviewer || reviewers[0]);
+  const genre = escapeHtml(formatGenres(post.genre));
+  const imageUrl = safeUrl(post.image_url);
+  const spotifyUrl = safeUrl(post.spotify);
   document.title = `${post.artist} - ${post.title}`;
-  detail.innerHTML = `<a class="back-link" href="journal.html">← Back to journal</a><div class="detail-layout"><div class="detail-image">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><article class="detail-copy"><p class="eyebrow">${formatGenres(post.genre)} <span class="line"></span> ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</p><h1>${post.artist}<br><em>${post.title}</em></h1><p class="detail-byline">Reviewed by ${post.reviewer || reviewers[0]}</p><div class="detail-rating">${stars(post.rating)}</div><p class="detail-note">${post.note}</p>${post.reflection ? `<div class="reflection"><p class="eyebrow">Extended reflection</p><p>${post.reflection}</p></div>` : ''}${post.spotify ? `<a class="text-link" href="${post.spotify}" target="_blank" rel="noopener">Listen on Spotify <span>↗</span></a>` : ''}</article></div>`;
+  detail.innerHTML = `<a class="back-link" href="journal.html">← Back to journal</a><div class="detail-layout"><div class="detail-image">${imageUrl ? `<img src="${imageUrl}" alt="${artist} - ${title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><article class="detail-copy"><p class="eyebrow">${genre} <span class="line"></span> ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</p><h1>${artist}<br><em>${title}</em></h1><p class="detail-byline">Reviewed by ${reviewer}</p><div class="detail-rating">${stars(post.rating)}</div><p class="detail-note">${note}</p>${reflection ? `<div class="reflection"><p class="eyebrow">Extended reflection</p><p>${reflection}</p></div>` : ''}${spotifyUrl ? `<a class="text-link" href="${spotifyUrl}" target="_blank" rel="noopener">Listen on Spotify <span>↗</span></a>` : ''}</article></div>`;
 }
 function resetPostForm() {
   editingPostId = null;
@@ -234,7 +265,7 @@ async function deletePost(postId) {
   await loadPosts();
 }
 function openModal(id) { document.querySelector(`#${id}`).hidden = false; document.body.style.overflow = 'hidden'; }
-function closeModal(id) { document.querySelector(`#${id}`).hidden = true; document.body.style.overflow = ''; }
+function closeModal(id) { document.querySelector(`#${id}`).hidden = true; document.body.style.overflow = ''; if (id === 'editor-modal') resetPostForm(); }
 function addSignOutControl() {
   const editor = document.querySelector('#editor-modal .editor-heading');
   if (!editor || document.querySelector('#sign-out-button')) return;

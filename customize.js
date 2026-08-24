@@ -33,7 +33,6 @@ const fields = [
   ['YOUR SHORT BIO. Share who you are, what you listen to, and what readers will find on this site.', 'About short bio', 'Share who you are...'],
   ['YOUR LONGER BIO. Add your background, your listening habits, your editorial point of view, or anything else you want visitors to know.', 'About longer bio', 'Add your longer bio...'],
   ['YOUR POST LABEL', 'Post detail label', 'YOUR POST LABEL'],
-  ['YOUR LOGIN LINK', 'Login link text', 'YOUR LOGIN LINK'],
   ['YOUR LOGIN LABEL', 'Login section label', 'YOUR LOGIN LABEL'],
   ['YOUR LOGIN HEADING.', 'Login heading', 'YOUR LOGIN HEADING.'],
   ['YOUR LOGIN INSTRUCTIONS.', 'Login instructions', 'YOUR LOGIN INSTRUCTIONS.'],
