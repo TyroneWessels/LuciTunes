@@ -80,6 +80,12 @@ if (postForm && !document.querySelector('#featured-toggle')) {
   label.innerHTML = '<button type="button" id="featured-toggle" aria-pressed="false" aria-label="Feature this post">◆</button><span>Feature this post (diamond pick)</span>';
   postForm.querySelector('#rating-input')?.closest('fieldset').after(label);
 }
+const reviewers = ['Lucille', 'Modest'];
+if (postForm && !document.querySelector('#reviewer')) {
+  const label = document.createElement('label');
+  label.innerHTML = `Reviewer<select id="reviewer">${reviewers.map((name) => `<option value="${name}">${name}</option>`).join('')}</select>`;
+  postForm.querySelector('#genre')?.closest('.form-row').after(label);
+}
 if (postForm && !document.querySelector('#genre-options')) {
   const datalist = document.createElement('datalist');
   datalist.id = 'genre-options';
@@ -128,7 +134,7 @@ applyTemplateConfig();
 
 function stars(rating) { return '★'.repeat(rating) + '<span class="empty-stars">' + '★'.repeat(5 - rating) + '</span>'; }
 function postCardMarkup(post, index) {
-  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${formatGenres(post.genre)}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3><p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
+  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${formatGenres(post.genre)}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${post.artist}<br><span>${post.title}</span></h3>${post.reviewer ? `<p class="post-byline">Reviewed by ${post.reviewer}</p>` : ''}<p class="post-note">${post.note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
 }
 function renderPosts() {
   if (!grid || !filter || !emptyState) return;
@@ -164,7 +170,7 @@ async function loadPosts() {
   renderLatestPost();
 }
 function postMarkup(post) {
-  return `<a class="latest-link" href="post.html?id=${post.id}">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="latest-placeholder">No<br>Post<br>Yet</span>'}<span class="latest-overlay"><span class="post-meta">${formatGenres(post.genre)} / ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span><strong>${post.artist}<br><em>${post.title}</em></strong><span class="latest-cta">Read the full note →</span></span></a>`;
+  return `<a class="latest-link" href="post.html?id=${post.id}">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="latest-placeholder">No<br>Post<br>Yet</span>'}<span class="latest-overlay"><span class="post-meta">${formatGenres(post.genre)} / ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}${post.reviewer ? ` / Reviewed by ${post.reviewer}` : ''}</span><strong>${post.artist}<br><em>${post.title}</em></strong><span class="latest-cta">Read the full note →</span></span></a>`;
 }
 function renderLatestPost() {
   if (!latestFeature) return;
@@ -178,7 +184,7 @@ async function loadPostDetail() {
   const { data: post, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
   if (error || !post) { detail.innerHTML = '<p class="detail-status">This post could not be found.</p>'; return; }
   document.title = `${post.artist} - ${post.title}`;
-  detail.innerHTML = `<a class="back-link" href="journal.html">← Back to journal</a><div class="detail-layout"><div class="detail-image">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><article class="detail-copy"><p class="eyebrow">${formatGenres(post.genre)} <span class="line"></span> ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</p><h1>${post.artist}<br><em>${post.title}</em></h1><div class="detail-rating">${stars(post.rating)}</div><p class="detail-note">${post.note}</p>${post.reflection ? `<div class="reflection"><p class="eyebrow">Extended reflection</p><p>${post.reflection}</p></div>` : ''}${post.spotify ? `<a class="text-link" href="${post.spotify}" target="_blank" rel="noopener">Listen on Spotify <span>↗</span></a>` : ''}</article></div>`;
+  detail.innerHTML = `<a class="back-link" href="journal.html">← Back to journal</a><div class="detail-layout"><div class="detail-image">${post.image_url ? `<img src="${post.image_url}" alt="${post.artist} - ${post.title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><article class="detail-copy"><p class="eyebrow">${formatGenres(post.genre)} <span class="line"></span> ${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</p><h1>${post.artist}<br><em>${post.title}</em></h1>${post.reviewer ? `<p class="detail-byline">Reviewed by ${post.reviewer}</p>` : ''}<div class="detail-rating">${stars(post.rating)}</div><p class="detail-note">${post.note}</p>${post.reflection ? `<div class="reflection"><p class="eyebrow">Extended reflection</p><p>${post.reflection}</p></div>` : ''}${post.spotify ? `<a class="text-link" href="${post.spotify}" target="_blank" rel="noopener">Listen on Spotify <span>↗</span></a>` : ''}</article></div>`;
 }
 function resetPostForm() {
   editingPostId = null;
@@ -205,6 +211,7 @@ function startEditing(postId) {
   document.querySelector('#title').value = post.title;
   document.querySelector('#genre').value = post.genre;
   document.querySelector('#spotify').value = post.spotify || '';
+  document.querySelector('#reviewer').value = post.reviewer || reviewers[0];
   document.querySelector('#note').value = post.note;
   document.querySelector('#reflection').value = post.reflection || '';
   selectedRating = post.rating;
@@ -295,9 +302,27 @@ if (dropzone) {
   ['dragleave', 'drop'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => { event.preventDefault(); dropzone.classList.remove('dragging'); }));
   dropzone.addEventListener('drop', (event) => selectImage(event.dataTransfer.files[0]));
 }
-if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data: { user } } = await supabaseClient.auth.getUser(); if (!user) { message.textContent = 'Please sign in before publishing.'; return; } let imageUrl = editingImageUrl; if (selectedImage) { const filePath = `${user.id}/${Date.now()}.jpg`; const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const { error: uploadError } = await supabaseClient.storage.from('post-images').upload(filePath, imageBlob, { contentType: 'image/jpeg', upsert: false }); if (uploadError) { message.textContent = uploadError.message; return; } imageUrl = supabaseClient.storage.from('post-images').getPublicUrl(filePath).data.publicUrl; } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: splitGenres(document.querySelector('#genre').value).join(', '), rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl, featured: selectedFeatured }; const result = editingPostId ? await supabaseClient.from('posts').update(postData).eq('id', editingPostId).eq('author_id', user.id) : await supabaseClient.from('posts').insert({ ...postData, author_id: user.id }); if (result.error) { message.textContent = result.error.message; return; } await loadPosts(); resetPostForm(); closeModal('editor-modal'); });
+if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data: { user } } = await supabaseClient.auth.getUser(); if (!user) { message.textContent = 'Please sign in before publishing.'; return; } let imageUrl = editingImageUrl; if (selectedImage) { const filePath = `${user.id}/${Date.now()}.jpg`; const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const { error: uploadError } = await supabaseClient.storage.from('post-images').upload(filePath, imageBlob, { contentType: 'image/jpeg', upsert: false }); if (uploadError) { message.textContent = uploadError.message; return; } imageUrl = supabaseClient.storage.from('post-images').getPublicUrl(filePath).data.publicUrl; } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: splitGenres(document.querySelector('#genre').value).join(', '), rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl, featured: selectedFeatured, reviewer: document.querySelector('#reviewer').value }; const result = editingPostId ? await supabaseClient.from('posts').update(postData).eq('id', editingPostId).eq('author_id', user.id) : await supabaseClient.from('posts').insert({ ...postData, author_id: user.id }); if (result.error) { message.textContent = result.error.message; return; } await loadPosts(); resetPostForm(); closeModal('editor-modal'); });
 document.querySelector('#cancel-edit')?.addEventListener('click', () => { resetPostForm(); });
 if (filter) filter.addEventListener('change', renderPosts);
+
+function initThemeToggle() {
+  const toggle = document.querySelector('#theme-toggle');
+  if (!toggle) return;
+  const icon = toggle.querySelector('.theme-toggle-icon');
+  const applyTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (icon) icon.textContent = theme === 'dark' ? '☀' : '☾';
+    toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  };
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+  toggle.addEventListener('click', () => {
+    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', nextTheme);
+    applyTheme(nextTheme);
+  });
+}
+initThemeToggle();
 document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating));
 renderPosts();
 loadPosts();

@@ -73,3 +73,20 @@ function buildForm() {
 }
 function saveAndRefresh() { const config = {}; document.querySelectorAll('#customizer-form input[data-placeholder]').forEach((input) => { if (input.value.trim()) config[input.dataset.placeholder] = input.value.trim(); }); document.querySelectorAll('#customizer-form input[data-field-visibility]').forEach((input) => { config[`show_${input.dataset.fieldVisibility}`] = input.checked; }); document.querySelectorAll('#customizer-form input[data-visibility]').forEach((input) => { config[input.dataset.visibility] = input.checked; }); localStorage.setItem(configKey, JSON.stringify(config)); document.querySelector('#preview').contentWindow.location.reload(); document.querySelector('#save-status').textContent = 'Saved in this browser'; }
 function downloadPreview() { const html = `<!doctype html>${document.querySelector('#preview').contentDocument.documentElement.outerHTML}`; const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); link.download = 'my-music-blog-home.html'; link.click(); URL.revokeObjectURL(link.href); }
+function initThemeToggle() {
+  const toggle = document.querySelector('#theme-toggle');
+  if (!toggle) return;
+  const icon = toggle.querySelector('.theme-toggle-icon');
+  const applyTheme = (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (icon) icon.textContent = theme === 'dark' ? '☀' : '☾';
+    toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  };
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+  toggle.addEventListener('click', () => {
+    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', nextTheme);
+    applyTheme(nextTheme);
+  });
+}
+initThemeToggle();

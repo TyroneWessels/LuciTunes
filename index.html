@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script>(function(){var t=localStorage.getItem('theme');if(t!=='dark'&&t!=='light'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="The site where I show the music i enjoy">
   <title>LuciTunes | LuciTunes</title>
@@ -18,6 +19,7 @@
         <a href="journal.html">The Collection</a>
         <a href="about.html">About LuciTunes</a>
         <a class="customize-link" href="customize.html" hidden>Customize</a>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"><span class="theme-toggle-icon" aria-hidden="true">☾</span></button>
         <button class="login-button" id="login-button" type="button"><span class="icon">↗</span> Login</button>
       </nav>
     </header>

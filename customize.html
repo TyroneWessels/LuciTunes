@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <script>(function(){var t=localStorage.getItem('theme');if(t!=='dark'&&t!=='light'){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Customize Your Blog</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="site-shell">
-    <header class="site-header"><a class="brand" href="index.html"><span>LuciTunes</span></a><nav class="main-nav"><a href="index.html">Home</a><a href="journal.html">The Collection</a><a href="about.html">About LuciTunes</a></nav></header>
+    <header class="site-header"><a class="brand" href="index.html"><span>LuciTunes</span></a><nav class="main-nav"><a href="index.html">Home</a><a href="journal.html">The Collection</a><a href="about.html">About LuciTunes</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode"><span class="theme-toggle-icon" aria-hidden="true">☾</span></button></nav></header>
     <main class="customizer-page"><section class="customizer-intro"><p class="eyebrow">Private studio <span class="line"></span> Your settings</p><h1>Shape the<br><em>front page.</em></h1><p>Only the copy that visibly changes your site is here. Type into a field and the live preview updates immediately.</p><p class="customizer-note">Your settings are saved in this browser. Posts are saved separately in Supabase.</p></section><section class="customizer-workspace"><form class="customizer-form" id="customizer-form"></form><div class="customizer-actions"><button class="primary-button" id="download-button" type="button">Download home HTML <span>↓</span></button><button class="secondary-button" id="reset-button" type="button">Reset copy</button></div><p class="save-status" id="save-status" aria-live="polite"></p></section><section class="preview-wrap"><div class="preview-label"><span>Live preview</span><span>Home page</span></div><iframe id="preview" title="Live homepage preview" src="index.html"></iframe></section></main>
     <footer class="site-footer"><span>Private studio</span><a href="index.html">Back to home</a></footer>
   </div>
