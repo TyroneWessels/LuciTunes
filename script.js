@@ -1,56 +1,4 @@
 const storageKey = 'needle-note-posts-v2';
-const templateStorageKey = 'music-blog-template-config';
-const defaultTemplateConfig = {
-  'YOUR BLOG NAME': 'LuciTunes',
-  'YOUR BLOG DESCRIPTION': 'The site where I show the music I enjoy.',
-  'YOUR SHORT DESCRIPTION': 'A personal collection of music worth remembering',
-  'YOUR YEAR': '2026',
-  'YOUR JOURNAL TITLE': 'The Collection',
-  'YOUR ABOUT TITLE': 'About LuciTunes',
-  'YOUR POST TITLE': 'Music note',
-  'YOUR BLOG NAME home': 'LuciTunes home',
-  'YOUR JOURNAL LINK': 'The Collection',
-  'YOUR ABOUT LINK': 'About LuciTunes',
-  'YOUR LOGIN LINK': 'Login',
-  'YOUR LOGIN LABEL': 'Editor access',
-  'YOUR LOGIN HEADING.': 'Welcome back.',
-  'YOUR LOGIN INSTRUCTIONS.': 'Sign in to write and manage your music notes.',
-  'YOUR LOGIN BUTTON': 'Login',
-  'YOUR CATEGORY': 'A personal music collection',
-  'EST. YEAR': '2026',
-  'YOUR MAIN': 'Welcome to LuciTunes',
-  'HEADLINE HERE.': 'Music worth remembering',
-  'HEADING HERE.': 'A personal listening archive',
-  'GOES HERE.': 'A closer listen',
-  'YOUR INTRODUCTION. Tell visitors what this blog is about and why they should read it.': 'A personal collection of the music I listen to, love, and recommend.',
-  'YOUR CALL TO ACTION': 'View The Collection',
-  'YOUR LATEST POST': 'My Latest Post',
-  'YOUR JOURNAL LABEL': 'The Collection',
-  'YOUR JOURNAL': 'The Collection',
-  'YOUR JOURNAL INTRO. Use this page to collect your music notes, reviews, and discoveries.': 'Notes, ratings, and reflections on the music that stays with me.',
-  'The Collection INTRO. Use this page to collect your music notes, reviews, and discoveries.': 'Notes, ratings, and reflections on the music that stays with me.',
-  'YOUR SECTION LABEL': 'Recently heard',
-  'YOUR POSTS HEADING': 'Reviews',
-  'YOUR FILTER LABEL': 'Filter by genre',
-  'YOUR EMPTY JOURNAL MESSAGE': 'No reviews yet. The first note is waiting to be written.',
-  'YOUR ABOUT LABEL': 'About LuciTunes',
-  'YOUR ABOUT': 'About LuciTunes',
-  'YOUR ABOUT TEXT. Introduce yourself, your taste, and what readers can expect from your posts.': 'A personal space for sharing the music I enjoy and the stories I hear inside it.',
-  'YOUR SECOND LABEL': 'The story behind the collection',
-  'YOUR STORY': 'Listen closely',
-  'YOUR SHORT BIO. Share who you are, what you listen to, and what readers will find on this site.': 'I collect songs, albums, and the feelings they leave behind.',
-  'YOUR LONGER BIO. Add your background, your listening habits, your editorial point of view, or anything else you want visitors to know.': 'LuciTunes is a growing archive of personal listening notes, honest ratings, and music I want to return to.',
-  'YOUR POST LABEL': 'Listening note',
-  'YOUR EDITOR LABEL': 'Your studio',
-  'YOUR EDITOR HEADING.': 'Write a note.',
-  'YOUR EDITOR EDIT HEADING.': 'Edit your note.',
-  'YOUR MODE': 'Editor mode',
-  'YOUR PUBLISH BUTTON': 'Publish note',
-  'YOUR SAVE BUTTON': 'Save changes',
-  'YOUR FOOTER MESSAGE': 'Music for the moments between moments.',
-  'YOUR BACK TO TOP LABEL': 'Back to top'
-};
-const templateConfig = { ...defaultTemplateConfig, ...JSON.parse(localStorage.getItem(templateStorageKey) || '{}') };
 const supabaseUrl = 'https://wodiuznopzrsobqgbonw.supabase.co';
 const supabaseKey = 'sb_publishable_XKLOB2aJjn0vS8iUAOZhHA_JVU02_sn';
 const supabaseClient = window.supabase?.createClient(supabaseUrl, supabaseKey);
@@ -105,33 +53,6 @@ function updateGenreOptions() {
     filter.value = genreList.includes(previousValue) ? previousValue : 'all';
   }
 }
-async function updateCustomizeLink() {
-  const customizeLink = document.querySelector('.customize-link');
-  if (!customizeLink || !supabaseClient) return;
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  customizeLink.hidden = !user;
-}
-updateCustomizeLink();
-
-function applyTemplateConfig() {
-  const replacements = Object.entries(templateConfig).filter(([key]) => key !== 'email' && key !== 'password').sort(([first], [second]) => second.length - first.length);
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-  const textNodes = [];
-  while (walker.nextNode()) textNodes.push(walker.currentNode);
-  textNodes.forEach((node) => {
-    replacements.forEach(([placeholder, value]) => {
-      if (node.nodeValue.includes(placeholder)) node.nodeValue = node.nodeValue.split(placeholder).join(templateConfig[`show_${placeholder}`] === false ? '' : (value || placeholder));
-    });
-    if (templateConfig['YOUR BLOG NAME']) node.nodeValue = node.nodeValue.split('YOUR & NAME').join(templateConfig['YOUR BLOG NAME']);
-  });
-  Object.entries(templateConfig).filter(([key, value]) => key.startsWith('show_') && value === false).forEach(([key]) => { const placeholder = key.slice(5); textNodes.forEach((node) => { node.nodeValue = node.nodeValue.split(placeholder).join(''); }); });
-  Object.entries(templateConfig).sort(([first], [second]) => second.length - first.length).forEach(([placeholder, value]) => { if (value) document.title = document.title.split(placeholder).join(value); });
-  if (templateConfig['YOUR BLOG DESCRIPTION']) document.querySelector('meta[name="description"]')?.setAttribute('content', templateConfig['YOUR BLOG DESCRIPTION']);
-  const visibilitySelectors = { showLatest: '.latest-feature', showJournal: '.journal-section', showAbout: '.about-section', showJournalLink: 'a[href="journal.html"]', showAboutLink: 'a[href="about.html"]' };
-  Object.entries(visibilitySelectors).forEach(([key, selector]) => { if (templateConfig[key] === false) document.querySelectorAll(selector).forEach((element) => { element.hidden = true; }); });
-}
-applyTemplateConfig();
-
 function stars(rating) { return '★'.repeat(rating) + '<span class="empty-stars">' + '★'.repeat(5 - rating) + '</span>'; }
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -278,7 +199,6 @@ function addSignOutControl() {
     await supabaseClient?.auth.signOut();
     closeModal('editor-modal');
     currentUser = null;
-    document.querySelectorAll('.customize-link').forEach((link) => { link.hidden = true; });
     renderPosts();
   });
   editor.appendChild(button);
@@ -287,7 +207,7 @@ addSignOutControl();
 document.querySelector('#login-button')?.addEventListener('click', async () => { const { data: { user } } = supabaseClient ? await supabaseClient.auth.getUser() : { data: { user: null } }; openModal(user ? 'editor-modal' : 'login-modal'); });
 document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => closeModal(button.dataset.close)));
 document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.addEventListener('click', (event) => { if (event.target === backdrop) closeModal(backdrop.id); }));
-document.querySelector('#login-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const email = document.querySelector('#email').value; const password = document.querySelector('#password').value; const message = document.querySelector('#login-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { message.textContent = error.message; return; } currentUser = data.user; document.querySelectorAll('.customize-link').forEach((link) => { link.hidden = false; }); closeModal('login-modal'); openModal('editor-modal'); });
+document.querySelector('#login-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const email = document.querySelector('#email').value; const password = document.querySelector('#password').value; const message = document.querySelector('#login-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { message.textContent = error.message; return; } currentUser = data.user; closeModal('login-modal'); openModal('editor-modal'); });
 document.querySelectorAll('#rating-input button').forEach((button) => button.addEventListener('click', () => { selectedRating = Number(button.dataset.rating); document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating)); }));
 document.querySelector('#featured-toggle')?.addEventListener('click', (event) => { selectedFeatured = !selectedFeatured; event.target.classList.toggle('active', selectedFeatured); event.target.setAttribute('aria-pressed', String(selectedFeatured)); });
 function resizeImage(file) {
