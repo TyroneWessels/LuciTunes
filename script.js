@@ -1,9 +1,9 @@
 const storageKey = 'needle-note-posts-v2';
-const supabaseUrl = 'https://wodiuznopzrsobqgbonw.supabase.co';
-const supabaseKey = 'sb_publishable_XKLOB2aJjn0vS8iUAOZhHA_JVU02_sn';
-const supabaseClient = window.supabase?.createClient(supabaseUrl, supabaseKey);
+const sessionStorageKey = 'lucitunes-editor-session';
+const savedSession = sessionStorage.getItem(sessionStorageKey);
+let editorSession = savedSession ? JSON.parse(savedSession) : null;
 let posts = [];
-let currentUser = null;
+let currentUser = editorSession?.user || null;
 let editingPostId = null;
 let selectedRating = 5;
 let selectedFeatured = false;
@@ -17,6 +17,15 @@ const emptyState = document.querySelector('#empty-state');
 const detail = document.querySelector('#post-detail');
 const latestFeature = document.querySelector('#latest-feature');
 const postForm = document.querySelector('#post-form');
+async function apiRequest(path, options = {}) {
+  const headers = new Headers(options.headers);
+  if (editorSession?.accessToken) headers.set('Authorization', `Bearer ${editorSession.accessToken}`);
+  const response = await fetch(path, { ...options, headers });
+  if (response.status === 204) return { response, data: null };
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'The request could not be completed.');
+  return { response, data };
+}
 if (postForm && !document.querySelector('#reflection')) {
   const label = document.createElement('label');
   label.innerHTML = 'Extended reflection<textarea id="reflection" rows="7" placeholder="Write more about what you think and feel about this music..."></textarea>';
@@ -73,7 +82,7 @@ function postCardMarkup(post, index) {
   const reviewer = escapeHtml(post.reviewer || reviewers[0]);
   const genre = escapeHtml(formatGenres(post.genre));
   const imageUrl = safeUrl(post.image_url);
-  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${imageUrl ? `<img src="${imageUrl}" alt="${artist} - ${title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${artist}<br><span>${title}</span></h3><p class="post-byline">Reviewed by ${reviewer}</p><p class="post-note">${note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${currentUser && post.author_id === currentUser.id ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
+  return `<article class="post-card"><a class="post-card-link" href="post.html?id=${post.id}"><div class="post-image">${post.featured ? '<span class="diamond-badge" title="Featured">◆</span>' : ''}<span class="post-index">0${index + 1} / ${post.created_at ? new Date(post.created_at).getFullYear() : new Date().getFullYear()}</span>${imageUrl ? `<img src="${imageUrl}" alt="${artist} - ${title}">` : '<span class="image-placeholder">No<br>Cover<br>Image</span>'}</div><div class="post-content"><div class="post-meta"><span>${genre}</span><span>${post.created_at ? new Date(post.created_at).toLocaleDateString('en-GB') : 'Recently'}</span></div><h3>${artist}<br><span>${title}</span></h3><p class="post-byline">Reviewed by ${reviewer}</p><p class="post-note">${note}</p><div class="post-footer"><span class="stars" aria-label="${post.rating} out of 5 stars">${stars(post.rating)}</span>${post.spotify ? `<span class="spotify-link">Listen on Spotify ↗</span>` : ''}</div></div></a>${post.can_edit ? `<div class="post-actions"><button class="secondary-button edit-post" data-post-id="${post.id}" type="button">Edit</button><button class="danger-button delete-post" data-post-id="${post.id}" type="button">Delete</button></div>` : ''}</article>`;
 }
 function renderPosts() {
   if (!grid || !filter || !emptyState) return;
@@ -95,15 +104,14 @@ function renderFeaturedPosts() {
   featuredGrid.querySelectorAll('.delete-post').forEach((button) => button.addEventListener('click', () => deletePost(button.dataset.postId)));
 }
 async function loadPosts() {
-  if (!supabaseClient || !grid) return;
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  currentUser = user;
-  const { data, error } = await supabaseClient.from('public_posts').select('*').order('created_at', { ascending: false });
-  if (error) {
+  if (!grid) return;
+  try {
+    const { data } = await apiRequest('/api/posts');
+    posts = data || [];
+  } catch (error) {
     console.error('Could not load posts:', error.message);
     return;
   }
-  posts = data || [];
   updateGenreOptions();
   renderPosts();
   renderLatestPost();
@@ -122,11 +130,11 @@ function renderLatestPost() {
   latestFeature.querySelector('.latest-content').innerHTML = latest ? postMarkup(latest) : '<span class="latest-empty">Your newest post will appear here.</span>';
 }
 async function loadPostDetail() {
-  if (!detail || !supabaseClient) return;
+  if (!detail) return;
   const id = new URLSearchParams(window.location.search).get('id');
   if (!id) { detail.innerHTML = '<p class="detail-status">No post selected.</p>'; return; }
-  const { data: post, error } = await supabaseClient.from('public_posts').select('*').eq('id', id).single();
-  if (error || !post) { detail.innerHTML = '<p class="detail-status">This post could not be found.</p>'; return; }
+  let post;
+  try { ({ data: post } = await apiRequest(`/api/posts/${encodeURIComponent(id)}`)); } catch { detail.innerHTML = '<p class="detail-status">This post could not be found.</p>'; return; }
   const artist = escapeHtml(post.artist);
   const title = escapeHtml(post.title);
   const note = escapeHtml(post.note);
@@ -180,9 +188,8 @@ function startEditing(postId) {
   openModal('editor-modal');
 }
 async function deletePost(postId) {
-  if (!supabaseClient || !currentUser || !window.confirm('Delete this post?')) return;
-  const { error } = await supabaseClient.from('posts').delete().eq('id', postId).eq('author_id', currentUser.id);
-  if (error) { window.alert(error.message); return; }
+  if (!currentUser || !window.confirm('Delete this post?')) return;
+  try { await apiRequest(`/api/posts/${encodeURIComponent(postId)}`, { method: 'DELETE' }); } catch (error) { window.alert(error.message); return; }
   await loadPosts();
 }
 function openModal(id) { document.querySelector(`#${id}`).hidden = false; document.body.style.overflow = 'hidden'; }
@@ -196,7 +203,8 @@ function addSignOutControl() {
   button.type = 'button';
   button.textContent = 'Sign out';
   button.addEventListener('click', async () => {
-    await supabaseClient?.auth.signOut();
+    sessionStorage.removeItem(sessionStorageKey);
+    editorSession = null;
     closeModal('editor-modal');
     currentUser = null;
     renderPosts();
@@ -204,10 +212,10 @@ function addSignOutControl() {
   editor.appendChild(button);
 }
 addSignOutControl();
-document.querySelector('#login-button')?.addEventListener('click', async () => { const { data: { user } } = supabaseClient ? await supabaseClient.auth.getUser() : { data: { user: null } }; openModal(user ? 'editor-modal' : 'login-modal'); });
+document.querySelector('#login-button')?.addEventListener('click', () => openModal(currentUser ? 'editor-modal' : 'login-modal'));
 document.querySelectorAll('[data-close]').forEach((button) => button.addEventListener('click', () => closeModal(button.dataset.close)));
 document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.addEventListener('click', (event) => { if (event.target === backdrop) closeModal(backdrop.id); }));
-document.querySelector('#login-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const email = document.querySelector('#email').value; const password = document.querySelector('#password').value; const message = document.querySelector('#login-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password }); if (error) { message.textContent = error.message; return; } currentUser = data.user; closeModal('login-modal'); openModal('editor-modal'); });
+document.querySelector('#login-form')?.addEventListener('submit', async (event) => { event.preventDefault(); const email = document.querySelector('#email').value; const password = document.querySelector('#password').value; const message = document.querySelector('#login-message'); try { const { data } = await apiRequest('/api/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); editorSession = { accessToken: data.access_token, user: data.user }; sessionStorage.setItem(sessionStorageKey, JSON.stringify(editorSession)); currentUser = data.user; closeModal('login-modal'); openModal('editor-modal'); } catch (error) { message.textContent = error.message; } });
 document.querySelectorAll('#rating-input button').forEach((button) => button.addEventListener('click', () => { selectedRating = Number(button.dataset.rating); document.querySelectorAll('#rating-input button').forEach((star) => star.classList.toggle('active', Number(star.dataset.rating) <= selectedRating)); }));
 document.querySelector('#featured-toggle')?.addEventListener('click', (event) => { selectedFeatured = !selectedFeatured; event.target.classList.toggle('active', selectedFeatured); event.target.setAttribute('aria-pressed', String(selectedFeatured)); });
 function resizeImage(file) {
@@ -253,7 +261,7 @@ if (dropzone) {
   ['dragleave', 'drop'].forEach((eventName) => dropzone.addEventListener(eventName, (event) => { event.preventDefault(); dropzone.classList.remove('dragging'); }));
   dropzone.addEventListener('drop', (event) => selectImage(event.dataTransfer.files[0]));
 }
-if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!supabaseClient) { message.textContent = 'Supabase is not connected.'; return; } const { data: { user } } = await supabaseClient.auth.getUser(); if (!user) { message.textContent = 'Please sign in before publishing.'; return; } let imageUrl = editingImageUrl; if (selectedImage) { const filePath = `${user.id}/${Date.now()}.jpg`; const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const { error: uploadError } = await supabaseClient.storage.from('post-images').upload(filePath, imageBlob, { contentType: 'image/jpeg', upsert: false }); if (uploadError) { message.textContent = uploadError.message; return; } imageUrl = supabaseClient.storage.from('post-images').getPublicUrl(filePath).data.publicUrl; } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: splitGenres(document.querySelector('#genre').value).join(', '), rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl, featured: selectedFeatured, reviewer: document.querySelector('#reviewer').value }; const result = editingPostId ? await supabaseClient.from('posts').update(postData).eq('id', editingPostId).eq('author_id', user.id) : await supabaseClient.from('posts').insert({ ...postData, author_id: user.id }); if (result.error) { message.textContent = result.error.message; return; } await loadPosts(); resetPostForm(); closeModal('editor-modal'); });
+if (postForm) postForm.addEventListener('submit', async (event) => { event.preventDefault(); const message = document.querySelector('#post-message'); if (!currentUser) { message.textContent = 'Please sign in before publishing.'; return; } try { let imageUrl = editingImageUrl; if (selectedImage) { const imageBlob = await fetch(selectedImage).then((response) => response.blob()); const formData = new FormData(); formData.append('image', imageBlob, 'post-image.jpg'); ({ data: { imageUrl } } = await apiRequest('/api/upload', { method: 'POST', body: formData })); } const postData = { artist: document.querySelector('#artist').value.trim(), title: document.querySelector('#title').value.trim(), genre: splitGenres(document.querySelector('#genre').value).join(', '), rating: selectedRating, note: document.querySelector('#note').value.trim(), reflection: document.querySelector('#reflection').value.trim() || null, spotify: document.querySelector('#spotify').value.trim() || null, image_url: imageUrl, featured: selectedFeatured, reviewer: document.querySelector('#reviewer').value }; await apiRequest(editingPostId ? `/api/posts/${encodeURIComponent(editingPostId)}` : '/api/posts', { method: editingPostId ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); await loadPosts(); resetPostForm(); closeModal('editor-modal'); } catch (error) { message.textContent = error.message; } });
 document.querySelector('#cancel-edit')?.addEventListener('click', () => { resetPostForm(); });
 if (filter) filter.addEventListener('change', renderPosts);
 
