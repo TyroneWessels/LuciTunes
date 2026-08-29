@@ -98,7 +98,7 @@ async function loadPosts() {
   if (!supabaseClient || !grid) return;
   const { data: { user } } = await supabaseClient.auth.getUser();
   currentUser = user;
-  const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabaseClient.from('public_posts').select('*').order('created_at', { ascending: false });
   if (error) {
     console.error('Could not load posts:', error.message);
     return;
@@ -125,7 +125,7 @@ async function loadPostDetail() {
   if (!detail || !supabaseClient) return;
   const id = new URLSearchParams(window.location.search).get('id');
   if (!id) { detail.innerHTML = '<p class="detail-status">No post selected.</p>'; return; }
-  const { data: post, error } = await supabaseClient.from('posts').select('*').eq('id', id).single();
+  const { data: post, error } = await supabaseClient.from('public_posts').select('*').eq('id', id).single();
   if (error || !post) { detail.innerHTML = '<p class="detail-status">This post could not be found.</p>'; return; }
   const artist = escapeHtml(post.artist);
   const title = escapeHtml(post.title);
